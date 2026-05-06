@@ -1,0 +1,40 @@
+# .gitattributes
+
+# Всі текстові файли — LF
+* text=auto eol=lf
+
+# Явно для ключових файлів
+*.kt          text eol=lf
+*.java        text eol=lf
+*.gradle.kts  text eol=lf
+*.gradle      text eol=lf
+*.xml         text eol=lf
+*.properties  text eol=lf
+*.toml        text eol=lf
+*.yml         text eol=lf
+*.yaml        text eol=lf
+*.md          text eol=lf
+*.txt         text eol=lf
+
+# Gradle wrapper
+gradlew        text eol=lf
+gradlew.bat    text eol=crlf
+
+# Binary files (не чіпаємо)
+*.png         binary
+*.jpg         binary
+*.jpeg        binary
+*.gif         binary
+*.webp        binary
+*.ico         binary
+*.jar         binary
+*.aar         binary
+*.keystore    binary
+*.jks         binary
+*.p12         binary
+*.mp4         binary
+*.mp3         binary
+
+# Специфічно для IDE
+*.idea/       text eol=lf
+*.iml         text eol=lf
