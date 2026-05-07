@@ -6,10 +6,7 @@ import com.example.vectors.data.repository.VectorRepository
 import com.example.vectors.domain.model.Vector2D
 import com.example.vectors.domain.usecase.VectorOperations
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow // Додано
-import kotlinx.coroutines.flow.asStateFlow    // Додано
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -22,29 +19,25 @@ class VectorViewModel @Inject constructor(
     val vectors = repository.getAllVectors()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // 🔹 Використовуємо StateFlow замість звичайної змінної
     private val _resultVector = MutableStateFlow<Vector2D?>(null)
     val resultVector = _resultVector.asStateFlow()
 
-    fun addVector(vector: Vector2D) {
-        viewModelScope.launch {
-            repository.insertVector(vector)
-        }
-    }
+    private val _operationResult = MutableStateFlow<Vector2D?>(null)
+    val operationResult: StateFlow<Vector2D?> = _operationResult.asStateFlow()
 
-    fun deleteVector(id: Long) {
-        viewModelScope.launch {
-            repository.deleteVector(id)
-        }
-    }
+    private val _infoMessage = MutableStateFlow("")
+    val infoMessage = _infoMessage.asStateFlow()
 
-    // 🔹 Оновлюємо значення через .value
-    fun add(v1: Vector2D, v2: Vector2D) {
-        _resultVector.value = operations.add(v1, v2)
-    }
+    fun addVector(v: Vector2D) = viewModelScope.launch { repository.insertVector(v) }
+    fun deleteVector(id: Long) = viewModelScope.launch { repository.deleteVector(id) }
+    fun clearAll() = viewModelScope.launch { repository.clearAll() }
 
-    // Додай цей метод, щоб очищати результат, якщо потрібно
-    fun clearResult() {
-        _resultVector.value = null
+    fun setOperationResult(v: Vector2D?) { _resultVector.value = v }
+    fun clearResult() { _resultVector.value = null; _infoMessage.value = "" }
+
+    fun normalize(v: Vector2D) { _resultVector.value = v.normalize() }
+    fun dotProduct(v1: Vector2D, v2: Vector2D) {
+        val res = operations.dotProduct(v1, v2)
+        _infoMessage.value = "Скалярний добуток: $res"
     }
 }

@@ -1,42 +1,35 @@
 package com.example.vectors.ui.navigation
 
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.vectors.ui.home.HomeScreen
-import com.example.vectors.ui.operations.OperationsScreen
+import com.example.vectors.ui.screens.HomeScreen
 import com.example.vectors.ui.visualization.VisualizationScreen
-import com.example.vectors.ui.transformations.TransformationsScreen
+import com.example.vectors.ui.operations.OperationsScreen
 import com.example.vectors.ui.extensions.ExtensionsScreen
+import com.example.vectors.ui.transformations.TransformationsScreen
 
 @Composable
-fun NavGraph(
-    navController: NavHostController,
-    paddingValues: PaddingValues // Важливо: передаємо відступи від BottomBar
-) {
+fun NavGraph(navController: NavHostController) {
     NavHost(
         navController = navController,
-        startDestination = BottomNavItem.Home.route,
-        modifier = Modifier.padding(paddingValues) // Навхост не перекриває навігацію
+        startDestination = "home"
     ) {
-        composable(BottomNavItem.Home.route) {
+        composable("home") {
             HomeScreen()
         }
-        composable(BottomNavItem.Operations.route) {
+        composable("operations") {
             OperationsScreen(navController)
         }
-        composable(BottomNavItem.Visualization.route) {
-            VisualizationScreen(navController)
+        composable("transformations") {
+            TransformationsScreen()
         }
-        composable(BottomNavItem.Transformations.route) {
-            TransformationsScreen(navController)
+        composable("visualization") {
+            VisualizationScreen()
         }
-        composable(BottomNavItem.Extensions.route) {
-            ExtensionsScreen(navController)
+        composable("extensions") {
+            ExtensionsScreen()
         }
     }
 }
