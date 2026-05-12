@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -31,10 +32,23 @@ fun HomeScreen() {
     val context = LocalContext.current
     val contentResolver = context.contentResolver
 
+    // Поля для створення нового вектора
     var name by remember { mutableStateOf("") }
     var xStr by remember { mutableStateOf("") }
     var yStr by remember { mutableStateOf("") }
     var showForm by remember { mutableStateOf(false) }
+
+    // Стан для редагування
+    var vectorToEdit by remember { mutableStateOf<Vector2D?>(null) }
+    var editName by remember { mutableStateOf("") }
+    var editX by remember { mutableStateOf("") }
+    var editY by remember { mutableStateOf("") }
+
+    // Помилки та діалоги
+    var inputError by remember { mutableStateOf(false) }
+    var editError by remember { mutableStateOf(false) }
+    var showClearAllDialog by remember { mutableStateOf(false) }
+    var vectorToDelete by remember { mutableStateOf<Vector2D?>(null) }
 
     // Лаунчери для файлів
     val createFileLauncher = rememberLauncherForActivityResult(
@@ -45,10 +59,99 @@ fun HomeScreen() {
         contract = ActivityResultContracts.OpenDocument()
     ) { uri -> uri?.let { viewModel.importFromFile(it, contentResolver) } }
 
+    // --- ДІАЛОГ РЕДАГУВАННЯ ---
+    vectorToEdit?.let { vector ->
+        AlertDialog(
+            onDismissRequest = { vectorToEdit = null },
+            title = { Text("Редагувати вектор") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = editName,
+                        onValueChange = { editName = it; editError = false },
+                        label = { Text("Назва") },
+                        isError = editError && editName.isBlank()
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Row {
+                        OutlinedTextField(
+                            value = editX,
+                            onValueChange = { editX = it; editError = false },
+                            label = { Text("X") },
+                            modifier = Modifier.weight(1f),
+                            isError = editError && editX.toFloatOrNull() == null
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        OutlinedTextField(
+                            value = editY,
+                            onValueChange = { editY = it; editError = false },
+                            label = { Text("Y") },
+                            modifier = Modifier.weight(1f),
+                            isError = editError && editY.toFloatOrNull() == null
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val vx = editX.toFloatOrNull()
+                    val vy = editY.toFloatOrNull()
+                    if (editName.isBlank() || vx == null || vy == null) {
+                        editError = true
+                    } else {
+                        viewModel.addVector(vector.copy(name = editName, x = vx, y = vy))
+                        vectorToEdit = null
+                        Toast.makeText(context, "Оновлено", Toast.LENGTH_SHORT).show()
+                    }
+                }) { Text("Зберегти") }
+            },
+            dismissButton = {
+                TextButton(onClick = { vectorToEdit = null }) { Text("Скасувати") }
+            }
+        )
+    }
+
+    // --- ДІАЛОГ ОЧИЩЕННЯ ВСІЄЇ БАЗИ ---
+    if (showClearAllDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearAllDialog = false },
+            title = { Text("Очистити базу?") },
+            text = { Text("Ви впевнені, що хочете видалити всі вектори?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.clearAll()
+                    showClearAllDialog = false
+                    Toast.makeText(context, "Базу очищено", Toast.LENGTH_SHORT).show()
+                }) { Text("Видалити всі", color = Color.Red) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearAllDialog = false }) { Text("Скасувати") }
+            }
+        )
+    }
+
+    // --- ДІАЛОГ ВИДАЛЕННЯ ОДНОГО ВЕКТОРА ---
+    vectorToDelete?.let { vector ->
+        AlertDialog(
+            onDismissRequest = { vectorToDelete = null },
+            title = { Text("Видалення") },
+            text = { Text("Видалити «${vector.name}»?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteVector(vector.id)
+                    vectorToDelete = null
+                }) { Text("Видалити", color = Color.Red) }
+            },
+            dismissButton = {
+                TextButton(onClick = { vectorToDelete = null }) { Text("Скасувати") }
+            }
+        )
+    }
+
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text("Vector Lab 2D", fontSize = 32.sp, fontWeight = FontWeight.Black, color = Color(0xFF6B4EFF))
 
-        // Панель статистики та ФАЙЛОВІ КНОПКИ
+        // Статистика та кнопки
         Card(
             modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
             colors = CardDefaults.cardColors(containerColor = Color(0xFF6B4EFF).copy(alpha = 0.08f)),
@@ -63,28 +166,13 @@ fun HomeScreen() {
                         Text("Векторів: ${vectors.size}", fontSize = 14.sp, color = Color.Gray)
                     }
                 }
-
                 Spacer(Modifier.height(12.dp))
-
-                // Кнопки Експорту/Імпорту
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(
-                        onClick = { createFileLauncher.launch("vectors_backup.txt") },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("Зберегти", fontSize = 12.sp)
+                    OutlinedButton(onClick = { createFileLauncher.launch("vectors_backup.txt") }, modifier = Modifier.weight(1f)) {
+                        Icon(Icons.Default.Save, null, Modifier.size(18.dp)); Text("Зберегти", fontSize = 12.sp)
                     }
-                    OutlinedButton(
-                        onClick = { openFileLauncher.launch(arrayOf("text/plain")) },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Icon(Icons.Default.FileUpload, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("Відкрити", fontSize = 12.sp)
+                    OutlinedButton(onClick = { openFileLauncher.launch(arrayOf("text/plain")) }, modifier = Modifier.weight(1f)) {
+                        Icon(Icons.Default.FileUpload, null, Modifier.size(18.dp)); Text("Відкрити", fontSize = 12.sp)
                     }
                 }
             }
@@ -94,43 +182,59 @@ fun HomeScreen() {
             Button(onClick = { showForm = !showForm }) {
                 Text(if (showForm) "Закрити" else "Додати вектор")
             }
-            TextButton(onClick = { viewModel.clearAll() }) {
-                Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red)
+            TextButton(onClick = { showClearAllDialog = true }) {
+                Icon(Icons.Default.Delete, null, tint = Color.Red)
                 Text("Очистити", color = Color.Red)
             }
         }
 
+        // Форма створення
         AnimatedVisibility(visible = showForm) {
             Card(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Назва") }, modifier = Modifier.fillMaxWidth())
-                    Row {
-                        OutlinedTextField(value = xStr, onValueChange = { xStr = it }, label = { Text("X") }, modifier = Modifier.weight(1f))
+                    OutlinedTextField(
+                        value = name, onValueChange = { name = it; inputError = false },
+                        label = { Text("Назва") }, modifier = Modifier.fillMaxWidth(),
+                        isError = inputError && name.isBlank()
+                    )
+                    Row(Modifier.padding(top = 8.dp)) {
+                        OutlinedTextField(value = xStr, onValueChange = { xStr = it; inputError = false }, label = { Text("X") }, modifier = Modifier.weight(1f), isError = inputError && xStr.toFloatOrNull() == null)
                         Spacer(Modifier.width(8.dp))
-                        OutlinedTextField(value = yStr, onValueChange = { yStr = it }, label = { Text("Y") }, modifier = Modifier.weight(1f))
+                        OutlinedTextField(value = yStr, onValueChange = { yStr = it; inputError = false }, label = { Text("Y") }, modifier = Modifier.weight(1f), isError = inputError && yStr.toFloatOrNull() == null)
                     }
                     Button(onClick = {
-                        val vx = xStr.toFloatOrNull() ?: 0f
-                        val vy = yStr.toFloatOrNull() ?: 0f
-                        if (name.isNotBlank()) {
+                        val vx = xStr.toFloatOrNull()
+                        val vy = yStr.toFloatOrNull()
+                        if (name.isBlank() || vx == null || vy == null) { inputError = true } else {
                             viewModel.addVector(Vector2D(name = name, x = vx, y = vy))
-                            name = ""; xStr = ""; yStr = ""
-                            showForm = false
+                            name = ""; xStr = ""; yStr = ""; showForm = false
                         }
-                    }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) { Text("Зберегти в базу") }
+                    }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) { Text("Зберегти") }
                 }
             }
         }
 
+        // Список
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(vectors) { vector ->
-                Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .clickable {
+                            // Відкриваємо редагування при натисканні на картку
+                            vectorToEdit = vector
+                            editName = vector.name
+                            editX = vector.x.toString()
+                            editY = vector.y.toString()
+                        }
+                ) {
                     ListItem(
                         headlineContent = { Text(vector.name, fontWeight = FontWeight.Bold) },
                         supportingContent = { Text("X: ${vector.x}, Y: ${vector.y}") },
                         trailingContent = {
-                            IconButton(onClick = { viewModel.deleteVector(vector.id) }) {
-                                Icon(Icons.Default.Delete, contentDescription = null, tint = Color.LightGray)
+                            IconButton(onClick = { vectorToDelete = vector }) {
+                                Icon(Icons.Default.Delete, null, tint = Color.LightGray)
                             }
                         }
                     )
