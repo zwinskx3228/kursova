@@ -8,6 +8,7 @@ import com.example.vectors.ui.screens.HomeScreen
 import com.example.vectors.ui.visualization.VisualizationScreen
 import com.example.vectors.ui.operations.OperationsScreen
 import com.example.vectors.ui.extensions.ExtensionsScreen
+import com.example.vectors.ui.history.ArchiveScreen
 import com.example.vectors.ui.transformations.TransformationsScreen
 
 @Composable
@@ -30,6 +31,9 @@ fun NavGraph(navController: NavHostController) {
         }
         composable("extensions") {
             ExtensionsScreen()
+        }
+        composable("archive") {
+            ArchiveScreen()
         }
     }
 }

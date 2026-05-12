@@ -33,7 +33,6 @@ fun OperationsScreen(navController: NavHostController) {
     var resultText by remember { mutableStateOf("Оберіть вектори та дію") }
     var selectedOp by remember { mutableStateOf("") }
 
-    // Основний колір — Енергійний Оранжевий
     val orangeAccent = Color(0xFFFF9800)
     val lightOrangeBg = Color(0xFFFFF3E0)
 
@@ -41,9 +40,8 @@ fun OperationsScreen(navController: NavHostController) {
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .background(Color(0xFFFFFBF0)) // Дуже світлий кремовий фон
+            .background(Color(0xFFFFFBF0))
     ) {
-        // 1. Стильний Банер (Оранжевий градієнтний стиль)
         BannerSection(
             title = "Операції",
             subtitle = "Базові дії з векторами",
@@ -85,21 +83,9 @@ fun OperationsScreen(navController: NavHostController) {
                             .aspectRatio(1.1f)
                             .clickable {
                                 selectedOp = op
-                                if (v1 != null || op == "Очистити") {
-                                    when(op) {
-                                        "Додати" -> if(v2!=null) resultText = "(${v1!!.x + v2!!.x}, ${v1!!.y + v2!!.y})"
-                                        "Відняти" -> if(v2!=null) resultText = "(${v1!!.x - v2!!.x}, ${v1!!.y - v2!!.y})"
-                                        "Скалярний добуток" -> if(v2!=null) resultText = "${v1!!.x * v2!!.x + v1!!.y * v2!!.y}"
-                                        "Кут" -> if(v2!=null) {
-                                            val dot = v1!!.x * v2!!.x + v1!!.y * v2!!.y
-                                            val mag1 = Math.sqrt(v1!!.x.toDouble()*v1!!.x + v1!!.y*v1!!.y)
-                                            val mag2 = Math.sqrt(v2!!.x.toDouble()*v2!!.x + v2!!.y*v2!!.y)
-                                            val res = Math.toDegrees(Math.acos(dot / (mag1 * mag2)))
-                                            resultText = "${String.format("%.2f", res)}°"
-                                        }
-                                        "Довжина" -> resultText = String.format("%.2f", Math.sqrt(v1!!.x.toDouble()*v1!!.x + v1!!.y*v1!!.y))
-                                        "Очистити" -> { v1 = null; v2 = null; resultText = "Оберіть вектори"; selectedOp = "" }
-                                    }
+                                // ТУТ ТІЛЬКИ ПІДГОТОВКА (БЕЗ ЗБЕРЕЖЕННЯ В БД)
+                                if (op == "Очистити") {
+                                    v1 = null; v2 = null; resultText = "Оберіть вектори"; selectedOp = ""
                                 }
                             },
                         colors = CardDefaults.cardColors(
@@ -131,7 +117,47 @@ fun OperationsScreen(navController: NavHostController) {
             }
         }
 
-        // 4. Картка результату
+        // 4. Кнопка "Виконати" (КЛЮЧОВИЙ МОМЕНТ ДЛЯ АРХІВУ)
+        Button(
+            onClick = {
+                if (v1 != null && selectedOp.isNotEmpty()) {
+                    val res = when(selectedOp) {
+                        "Додати" -> if(v2!=null) "(${v1!!.x + v2!!.x}, ${v1!!.y + v2!!.y})" else null
+                        "Відняти" -> if(v2!=null) "(${v1!!.x - v2!!.x}, ${v1!!.y - v2!!.y})" else null
+                        "Скалярний добуток" -> if(v2!=null) "${v1!!.x * v2!!.x + v1!!.y * v2!!.y}" else null
+                        "Кут" -> if(v2!=null) {
+                            val dot = v1!!.x * v2!!.x + v1!!.y * v2!!.y
+                            val mag1 = Math.sqrt(v1!!.x.toDouble()*v1!!.x + v1!!.y*v1!!.y)
+                            val mag2 = Math.sqrt(v2!!.x.toDouble()*v2!!.x + v2!!.y*v2!!.y)
+                            val angle = Math.toDegrees(Math.acos(dot / (mag1 * mag2)))
+                            "${String.format("%.2f", angle)}°"
+                        } else null
+                        "Довжина" -> String.format("%.2f", Math.sqrt(v1!!.x.toDouble()*v1!!.x + v1!!.y*v1!!.y))
+                        else -> null
+                    }
+
+                    if (res != null) {
+                        resultText = res
+                        // ЗАПИСУЄМО В АРХІВ ТІЛЬКИ ПРИ НАТИСКАННІ
+                        viewModel.saveOperationToHistory(
+                            opName = selectedOp,
+                            input = "v1: ${v1?.name ?: "-"}, v2: ${v2?.name ?: "-"}",
+                            result = res
+                        )
+                    }
+                }
+            },
+            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = orangeAccent),
+            shape = RoundedCornerShape(12.dp),
+            enabled = selectedOp.isNotEmpty() && selectedOp != "Очистити"
+        ) {
+            Icon(Icons.Default.FlashOn, null)
+            Spacer(Modifier.width(8.dp))
+            Text("Виконати")
+        }
+
+        // 5. Картка результату
         ResultCard(resultText, orangeAccent, selectedOp)
 
         Spacer(Modifier.height(24.dp))

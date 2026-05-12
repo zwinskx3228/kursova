@@ -20,6 +20,7 @@ sealed class BottomNavItem(
     object Visualization : BottomNavItem("visualization", "Візуалізація", "📊")
     object Transformations : BottomNavItem("transformations", "Перетворення", "🔄")
     object Extensions : BottomNavItem("extensions", "Розширені", "✨")
+    object History : BottomNavItem("archive", "Архів", "📁") // <-- ДОДАТИ ЦЕ
 }
 
 // 🔹 2. Сама панель навігації
@@ -30,7 +31,8 @@ fun BottomNavBar(navController: NavController) {
         BottomNavItem.Operations,
         BottomNavItem.Visualization,
         BottomNavItem.Transformations,
-        BottomNavItem.Extensions
+        BottomNavItem.Extensions,
+        BottomNavItem.History
     )
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()

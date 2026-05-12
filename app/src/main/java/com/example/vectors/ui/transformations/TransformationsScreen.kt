@@ -70,13 +70,11 @@ fun TransformationsScreen() {
         // 2. Динамічне Меню
         Card(Modifier.padding(horizontal = 16.dp).fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color.White)) {
             Column(Modifier.padding(16.dp)) {
-                // Спільний вибір вектора
                 Text("Вектор", style = MaterialTheme.typography.labelMedium)
                 VectorDropdown(vectors, selectedVector) { selectedVector = it }
 
                 Spacer(Modifier.height(16.dp))
 
-                // МЕНЮ ДЛЯ КОЖНОГО ВИДУ
                 when (selectedType) {
                     "Поворот" -> {
                         OutlinedTextField(value = angleInput, onValueChange = { angleInput = it },
@@ -98,46 +96,60 @@ fun TransformationsScreen() {
                                 label = { Text("Крок Y") }, modifier = Modifier.weight(1f))
                         }
                     }
-                    else -> { Text("Для дзеркального відображення додаткові параметри не потрібні", style = MaterialTheme.typography.bodySmall) }
+                    else -> { Text("Додаткові параметри не потрібні", style = MaterialTheme.typography.bodySmall) }
                 }
 
                 Button(
                     onClick = {
                         selectedVector?.let { v ->
-                            when (selectedType) {
+                            var inputDetails = "Вектор: ${v.name}"
+                            val finalResult = when (selectedType) {
                                 "Поворот" -> {
                                     val angle = angleInput.toDoubleOrNull() ?: 0.0
                                     val rad = Math.toRadians(angle)
                                     val nx = v.x * Math.cos(rad) - v.y * Math.sin(rad)
                                     val ny = v.x * Math.sin(rad) + v.y * Math.cos(rad)
-                                    resultText = "(${String.format("%.2f", nx)}, ${String.format("%.2f", ny)})"
+                                    inputDetails += ", кут: $angle°"
+                                    "(${String.format("%.2f", nx)}, ${String.format("%.2f", ny)})"
                                 }
-                                "Дзеркало X" -> resultText = "(${v.x}, ${-v.y})"
-                                "Дзеркало Y" -> resultText = "(${-v.x}, ${v.y})"
-                                "Дзеркало O" -> resultText = "(${-v.x}, ${-v.y})"
+                                "Дзеркало X" -> "(${v.x}, ${-v.y})"
+                                "Дзеркало Y" -> "(${-v.x}, ${v.y})"
+                                "Дзеркало O" -> "(${-v.x}, ${-v.y})"
                                 "Масштаб" -> {
                                     val sx = scaleXInput.toDoubleOrNull() ?: 1.0
                                     val sy = scaleYInput.toDoubleOrNull() ?: 1.0
-                                    resultText = "(${v.x * sx}, ${v.y * sy})"
+                                    inputDetails += ", S($sx, $sy)"
+                                    "(${String.format("%.2f", v.x * sx)}, ${String.format("%.2f", v.y * sy)})"
                                 }
                                 "Переміщення" -> {
                                     val dx = moveXInput.toDoubleOrNull() ?: 0.0
                                     val dy = moveYInput.toDoubleOrNull() ?: 0.0
-                                    resultText = "(${v.x + dx}, ${v.y + dy})"
+                                    inputDetails += ", D($dx, $dy)"
+                                    "(${String.format("%.2f", v.x + dx)}, ${String.format("%.2f", v.y + dy)})"
                                 }
+                                else -> ""
                             }
+
+                            resultText = finalResult
+
+                            // ЗБЕРЕЖЕННЯ В АРХІВ
+                            viewModel.saveOperationToHistory(
+                                opName = selectedType,
+                                input = inputDetails,
+                                result = finalResult
+                            )
                         }
                     },
                     modifier = Modifier.fillMaxWidth().padding(top = 24.dp).height(56.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3)),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(16.dp),
+                    enabled = selectedVector != null
                 ) {
                     Text("Застосувати")
                 }
             }
         }
 
-        // Результат
         ResultCard(resultText, Color(0xFF1976D2))
     }
 }

@@ -12,3 +12,4 @@ data class VectorEntity(
     val y: Float,
     val color: Long = 0xFF6B4EFF
 )
+

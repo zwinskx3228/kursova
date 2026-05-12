@@ -33,7 +33,6 @@ fun ExtensionsScreen() {
     var v1 by remember { mutableStateOf<Vector2D?>(null) }
     var v2 by remember { mutableStateOf<Vector2D?>(null) }
 
-    // Стан полів вводу згідно з твоїми скріншотами
     var tParam by remember { mutableStateOf("0.5") }
     var maxLength by remember { mutableStateOf("0.5") }
     var radiusR by remember { mutableStateOf("0.5") }
@@ -47,10 +46,9 @@ fun ExtensionsScreen() {
             .verticalScroll(rememberScrollState())
             .background(Color(0xFFFDF7FF))
     ) {
-        // 1. Банер
         BannerSection("Операції", "Математичний аналіз", Color(0xFFAB47BC))
 
-        // 2. Сітка операцій (як на скріншотах)
+        // 2. Сітка операцій
         Card(
             modifier = Modifier.padding(16.dp).fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -104,7 +102,7 @@ fun ExtensionsScreen() {
             }
         }
 
-        // 3. Динамічна панель налаштувань
+        // 3. Панель налаштувань
         Card(
             modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = Color.White)
@@ -116,21 +114,14 @@ fun ExtensionsScreen() {
                         Spacer(Modifier.height(8.dp))
                         VectorDropdown(vectors, v2, "Другий вектор") { v2 = it }
                         Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = tParam,
-                            onValueChange = { tParam = it },
-                            label = { Text("Параметр t (0-1)") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        OutlinedTextField(value = tParam, onValueChange = { tParam = it }, label = { Text("Параметр t (0-1)") }, modifier = Modifier.fillMaxWidth())
                     }
                     "З полярних" -> {
                         OutlinedTextField(value = radiusR, onValueChange = { radiusR = it }, label = { Text("Довжина (r)") }, modifier = Modifier.fillMaxWidth())
                         Spacer(Modifier.height(8.dp))
                         OutlinedTextField(value = angleDeg, onValueChange = { angleDeg = it }, label = { Text("Кут (градуси)") }, modifier = Modifier.fillMaxWidth())
                     }
-                    "В полярні" -> {
-                        VectorDropdown(vectors, v1, "Перший вектор") { v1 = it }
-                    }
+                    "В полярні" -> { VectorDropdown(vectors, v1, "Перший вектор") { v1 = it } }
                     "Обмеження" -> {
                         VectorDropdown(vectors, v1, "Перший вектор") { v1 = it }
                         Spacer(Modifier.height(8.dp))
@@ -141,12 +132,9 @@ fun ExtensionsScreen() {
                         Spacer(Modifier.height(8.dp))
                         VectorDropdown(vectors, v2, "Другий вектор") { v2 = it }
                     }
-                    "З кута" -> {
-                        OutlinedTextField(value = angleDeg, onValueChange = { angleDeg = it }, label = { Text("Кут (градуси)") }, modifier = Modifier.fillMaxWidth())
-                    }
+                    "З кута" -> { OutlinedTextField(value = angleDeg, onValueChange = { angleDeg = it }, label = { Text("Кут (градуси)") }, modifier = Modifier.fillMaxWidth()) }
                 }
 
-                // Кнопка Виконати (як на скріншоті)
                 Button(
                     onClick = {
                         val t = tParam.replace(",", ".").toDoubleOrNull() ?: 0.5
@@ -154,47 +142,55 @@ fun ExtensionsScreen() {
                         val angle = angleDeg.replace(",", ".").toDoubleOrNull() ?: 0.0
                         val maxL = maxLength.replace(",", ".").toDoubleOrNull() ?: 0.0
 
+                        var currentInput = ""
+                        var currentResult = ""
+
                         when (selectedOp) {
                             "Інтерполяція" -> {
                                 if (v1 != null && v2 != null) {
                                     val rx = v1!!.x + (v2!!.x - v1!!.x) * t.toFloat()
                                     val ry = v1!!.y + (v2!!.y - v1!!.y) * t.toFloat()
-                                    resultText = "(${String.format("%.2f", rx)}, ${String.format("%.2f", ry)})"
+                                    currentInput = "${v1!!.name}, ${v2!!.name}, t=$t"
+                                    currentResult = "(${String.format("%.2f", rx)}, ${String.format("%.2f", ry)})"
                                 }
                             }
                             "З полярних" -> {
                                 val rad = Math.toRadians(angle)
                                 val rx = r * Math.cos(rad)
                                 val ry = r * Math.sin(rad)
-                                resultText = "(${String.format("%.2f", rx)}, ${String.format("%.2f", ry)})"
+                                currentInput = "r=$r, α=$angle°"
+                                currentResult = "(${String.format("%.2f", rx)}, ${String.format("%.2f", ry)})"
                             }
                             "В полярні" -> {
                                 v1?.let {
                                     val mag = Math.sqrt(it.x.toDouble() * it.x + it.y * it.y)
                                     val deg = Math.toDegrees(Math.atan2(it.y.toDouble(), it.x.toDouble()))
-                                    resultText = "r=${String.format("%.2f", mag)}, θ=${String.format("%.2f", deg)}°"
+                                    currentInput = "Вектор: ${it.name}"
+                                    currentResult = "r=${String.format("%.2f", mag)}, θ=${String.format("%.2f", deg)}°"
                                 }
                             }
                             "Обмеження" -> {
                                 v1?.let {
                                     val mag = Math.sqrt(it.x.toDouble() * it.x + it.y * it.y)
-                                    if (mag > maxL && mag > 0) {
+                                    val res = if (mag > maxL && mag > 0) {
                                         val ratio = maxL / mag
-                                        resultText = "(${String.format("%.2f", it.x * ratio)}, ${String.format("%.2f", it.y * ratio)})"
-                                    } else {
-                                        resultText = "(${it.x}, ${it.y})"
-                                    }
+                                        "(${String.format("%.2f", it.x * ratio)}, ${String.format("%.2f", it.y * ratio)})"
+                                    } else "(${it.x}, ${it.y})"
+                                    currentInput = "${it.name}, max=$maxL"
+                                    currentResult = res
                                 }
                             }
                             "Площа" -> {
                                 if (v1 != null && v2 != null) {
                                     val area = Math.abs(v1!!.x * v2!!.y - v1!!.y * v2!!.x)
-                                    resultText = "${String.format("%.2f", area)} кв.од."
+                                    currentInput = "${v1!!.name}, ${v2!!.name}"
+                                    currentResult = "${String.format("%.2f", area)} кв.од."
                                 }
                             }
                             "З кута" -> {
                                 val rad = Math.toRadians(angle)
-                                resultText = "(${String.format("%.2f", Math.cos(rad))}, ${String.format("%.2f", Math.sin(rad))})"
+                                currentInput = "Кут: $angle°"
+                                currentResult = "(${String.format("%.2f", Math.cos(rad))}, ${String.format("%.2f", Math.sin(rad))})"
                             }
                             "Відхилення" -> {
                                 if (v1 != null && v2 != null) {
@@ -202,9 +198,15 @@ fun ExtensionsScreen() {
                                     val mag1 = Math.sqrt(v1!!.x.toDouble() * v1!!.x + v1!!.y * v1!!.y)
                                     val mag2 = Math.sqrt(v2!!.x.toDouble() * v2!!.x + v2!!.y * v2!!.y)
                                     val angleRes = Math.toDegrees(Math.acos(dot / (mag1 * mag2)))
-                                    resultText = "${String.format("%.2f", angleRes)}°"
+                                    currentInput = "${v1!!.name}, ${v2!!.name}"
+                                    currentResult = "${String.format("%.2f", angleRes)}°"
                                 }
                             }
+                        }
+
+                        if (currentResult.isNotEmpty()) {
+                            resultText = currentResult
+                            viewModel.saveOperationToHistory(selectedOp, currentInput, currentResult)
                         }
                     },
                     modifier = Modifier.fillMaxWidth().padding(top = 24.dp).height(56.dp),
@@ -218,7 +220,6 @@ fun ExtensionsScreen() {
             }
         }
 
-        // 4. Картка результату (як на скріншоті)
         ResultCard(resultText, Color(0xFFD81B60), selectedOp)
     }
 }

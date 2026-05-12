@@ -16,10 +16,9 @@ data class Vector2D(
     operator fun minus(other: Vector2D) = copy(name = "$name - ${other.name}", x = x - other.x, y = y - other.y)
     operator fun times(scalar: Float) = Vector2D(name = "$name * $scalar", x = x * scalar, y = y * scalar)
     operator fun div(scalar: Float) = if (scalar != 0f) Vector2D(name = "$name / $scalar", x = x / scalar, y = y / scalar) else this
-    // Скалярний добуток
     fun dot(other: Vector2D): Float = x * other.x + y * other.y
 
-    // Кут між векторами в градусах
+
     fun angleWith(other: Vector2D): Double {
         val mag1 = magnitude()
         val mag2 = other.magnitude()
@@ -27,8 +26,6 @@ data class Vector2D(
         val cosTheta = dot(other) / (mag1 * mag2)
         return Math.toDegrees(acos(cosTheta.coerceIn(-1f, 1f).toDouble()))
     }
-
-    // Векторний добуток (для 2D це значення Z-компоненти або площа паралелограма)
     fun determinant(other: Vector2D): Float = x * other.y - y * other.x
 
     fun normalize(): Vector2D {

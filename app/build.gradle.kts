@@ -37,6 +37,8 @@ dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2024.02.01")
     implementation(composeBom)
 
+    implementation("com.google.code.gson:gson:2.10.1")
+
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.core:core-ktx:1.13.1")
 
